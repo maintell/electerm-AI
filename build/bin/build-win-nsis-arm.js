@@ -5,11 +5,14 @@ const {
   uploadToR2,
   builder: pb,
   reBuild,
-  replaceJSON
+  replaceJSON,
+  patchNsisKeepShortcuts
 } = require('./build-common')
 
 async function main () {
   echo('running build for Windows ARM64')
+
+  patchNsisKeepShortcuts()
 
   echo('build tar.gz for Windows ARM64')
   const src = 'win-arm64-installer.exe'
