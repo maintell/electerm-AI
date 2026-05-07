@@ -48,7 +48,8 @@ export default auto(function SyncSettingEntry (props) {
       // WebDAV specific fields
       serverUrl: syncSetting[type + 'ServerUrl'],
       username: syncSetting[type + 'Username'],
-      password: syncSetting[type + 'Password']
+      password: syncSetting[type + 'Password'],
+      skipVerify: syncSetting[type + 'SkipVerify'] || false
     }
     return (
       <SyncForm

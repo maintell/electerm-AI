@@ -7,7 +7,7 @@
  */
 import { useEffect, useRef } from 'react'
 import { ArrowDownOutlined, ArrowUpOutlined, SaveOutlined, ClearOutlined } from '@ant-design/icons'
-import { Button, Input, Form, Alert } from 'antd'
+import { Button, Input, Form, Alert, Switch } from 'antd'
 import { notification } from '../common/notification'
 import Link from '../common/external-link'
 import dayjs from 'dayjs'
@@ -80,6 +80,7 @@ export default function SyncForm (props) {
       up[syncType + 'ServerUrl'] = res.serverUrl || ''
       up[syncType + 'Username'] = res.username || ''
       up[syncType + 'Password'] = res.password || ''
+      up[syncType + 'SkipVerify'] = res.skipVerify || false
     }
 
     window.store.updateSyncSetting(up)
@@ -246,6 +247,13 @@ export default function SyncForm (props) {
             placeholder='WebDAV username'
             id='sync-input-webdav-username'
           />
+        </FormItem>
+        <FormItem
+          label={createLabel('Skip SSL verify')}
+          name='skipVerify'
+          valuePropName='checked'
+        >
+          <Switch />
         </FormItem>
         <FormItem
           label={createLabel(e('password'))}

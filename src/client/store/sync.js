@@ -68,11 +68,12 @@ export default (Store) => {
       ).join('####')
     }
     if (type === syncTypes.webdav) {
-      // WebDAV token format: serverUrl####username####password
+      // WebDAV token format: serverUrl####username####password####skipVerify
       const serverUrl = get(window.store.config, 'syncSetting.webdavServerUrl')
       const username = get(window.store.config, 'syncSetting.webdavUsername')
       const password = get(window.store.config, 'syncSetting.webdavPassword')
-      return [serverUrl, username, password].join('####')
+      const skipVerify = get(window.store.config, 'syncSetting.webdavSkipVerify') || false
+      return [serverUrl, username, password, skipVerify].join('####')
     }
     return get(window.store.config, 'syncSetting.' + type + 'AccessToken')
   }
