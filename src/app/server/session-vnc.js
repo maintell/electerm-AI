@@ -6,21 +6,8 @@ const log = require('../common/log')
 const { TerminalBase } = require('./session-base')
 const net = require('net')
 const proxySock = require('./socks')
-const uid = require('../common/uid')
-const { session } = require('./session-ssh')
+const { createHopProxy } = require('./session-hop')
 const globalState = require('./global-state')
-
-function getPort (fromPort = 120023) {
-  return new Promise((resolve, reject) => {
-    require('find-free-port')(fromPort, '127.0.0.1', function (err, freePort) {
-      if (err) {
-        reject(err)
-      } else {
-        resolve(freePort)
-      }
-    })
-  })
-}
 
 class TerminalVnc extends TerminalBase {
   init = async () => {
@@ -62,52 +49,15 @@ class TerminalVnc extends TerminalBase {
     const {
       host,
       port,
-      proxy,
-      readyTimeout,
-      connectionHoppings
+      readyTimeout
     } = this.initOptions
-    if (!connectionHoppings || !connectionHoppings.length) {
-      return proxy
-        ? await proxySock({
-          readyTimeout,
-          host,
-          port,
-          proxy
-        })
-        : undefined
+    const { proxyUrl, ssh } = await createHopProxy(this.initOptions)
+    if (ssh) {
+      this.ssh = ssh
     }
-    const hop = connectionHoppings.pop()
-    const fp = await getPort(12023)
-    const initOpts = {
-      connectionHoppings,
-      ...hop,
-      hasHopping: true,
-      cols: 80,
-      rows: 24,
-      term: 'xterm-256color',
-      saveTerminalLogToFile: false,
-      id: uid(),
-      enableSsh: true,
-      encode: 'utf-8',
-      envLang: 'en_US.UTF-8',
-      proxy,
-      sshTunnels: [
-        {
-          sshTunnel: 'dynamicForward',
-          sshTunnelLocalHost: '127.0.0.1',
-          sshTunnelLocalPort: fp,
-          id: uid()
-        }
-      ]
-    }
-    this.ssh = await session(initOpts)
-    const proxyA = `socks5://127.0.0.1:${fp}`
-    return proxySock({
-      readyTimeout,
-      host,
-      port,
-      proxy: proxyA
-    })
+    return proxyUrl
+      ? proxySock({ readyTimeout, host, port, proxy: proxyUrl })
+      : undefined
   }
 
   onMsg = (msg) => {

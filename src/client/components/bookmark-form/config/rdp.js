@@ -2,7 +2,7 @@ import { formItemLayout } from '../../../common/form-layout.js'
 import { terminalRdpType } from '../../../common/constants.js'
 import { createBaseInitValues, getAuthTypeDefault } from '../common/init-values.js'
 import { isEmpty } from 'lodash-es'
-import { commonFields } from './common-fields.js'
+import { commonFields, connectionHoppingTab } from './common-fields.js'
 
 const e = window.translate
 
@@ -12,6 +12,7 @@ const rdpConfig = {
   initValues: (props) => {
     return createBaseInitValues(props, terminalRdpType, {
       port: 3389,
+      connectionHoppings: [],
       ...getAuthTypeDefault(props)
     })
   },
@@ -38,7 +39,8 @@ const rdpConfig = {
         commonFields.proxy,
         commonFields.type
       ]
-    }
+    },
+    connectionHoppingTab()
   ]
 }
 
