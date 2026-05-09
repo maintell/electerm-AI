@@ -14,8 +14,7 @@ import {
   FullscreenOutlined,
   PaperClipOutlined,
   CloseOutlined,
-  ApartmentOutlined,
-  HeartOutlined
+  ApartmentOutlined
 } from '@ant-design/icons'
 import {
   Tooltip,
@@ -37,6 +36,7 @@ import {
 import { SplitViewIcon } from '../icons/split-view'
 import { refs } from '../common/ref'
 import safeName from '../../common/safe-name'
+import { HeartbeatIcon } from '../icons/heartbeat'
 import './session.styl'
 
 const e = window.translate
@@ -550,7 +550,7 @@ export default class SessionWrapper extends Component {
     }
     return (
       <Tooltip title={title}>
-        <HeartOutlined {...iconProps} />
+        <HeartbeatIcon {...iconProps} />
       </Tooltip>
     )
   }
