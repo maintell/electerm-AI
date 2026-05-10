@@ -362,6 +362,26 @@ export default Store => {
     store.updateHistory(newTab)
   }
 
+  // Dangerous props that should not be accepted from IPC
+  const dangerousTabProps = [
+    'execLinux',
+    'execMac',
+    'execWindows',
+    'execWindowsArgs',
+    'execMacArgs',
+    'execLinuxArgs',
+    'setEnv',
+    'runScripts',
+    'interactiveValues'
+  ]
+
+  Store.prototype.ipcOpenTab = function (parsed) {
+    const safeTab = Object.fromEntries(
+      Object.entries(parsed).filter(([key]) => !dangerousTabProps.includes(key))
+    )
+    return window.store.addTab(safeTab)
+  }
+
   Store.prototype.clickNextTab = debounce(function () {
     window.store.clickBioTab(1)
   }, 100)
