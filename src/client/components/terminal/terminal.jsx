@@ -7,7 +7,6 @@ import {
   Spin,
   Dropdown
 } from 'antd'
-import { notification } from '../common/notification'
 import message from '../common/message'
 import Modal from '../common/modal'
 import classnames from 'classnames'
@@ -48,7 +47,6 @@ import ExternalLink from '../common/external-link.jsx'
 import createDefaultLogPath from '../../common/default-log-path.js'
 import SearchResultBar from './terminal-search-bar'
 import RemoteFloatControl from '../common/remote-float-control'
-import { showSocketCloseWarning } from './socket-close-warning.jsx'
 import ReconnectOverlay from './reconnect-overlay.jsx'
 import {
   loadTerminal,
@@ -169,11 +167,6 @@ class Term extends Component {
     this.fitAddon = null
     this.cmdAddon = null
     this.imageAddon = null
-    // Clear the notification if it exists
-    if (this.socketCloseWarning) {
-      notification.destroy(this.socketCloseWarning.key)
-      this.socketCloseWarning = null
-    }
   }
 
   terminalConfigProps = [
@@ -1370,31 +1363,8 @@ class Term extends Component {
       return this.props.delTab(this.props.tab.id)
     }
     const { autoReconnectTerminal } = this.props.config
-    const isActive = this.isActiveTerminal()
-    const isFocused = window.focused
     if (autoReconnectTerminal) {
-      if (isActive && isFocused) {
-        this.socketCloseWarning = showSocketCloseWarning({
-          tabId: this.props.tab.id,
-          tab: this.props.tab,
-          autoReconnect: true,
-          delTab: this.props.delTab,
-          reloadTab: this.props.reloadTab
-        })
-      } else {
-        this.scheduleAutoReconnect(3000)
-      }
-    } else {
-      if (!isActive || !isFocused) {
-        return false
-      }
-      this.socketCloseWarning = showSocketCloseWarning({
-        tabId: this.props.tab.id,
-        tab: this.props.tab,
-        autoReconnect: false,
-        delTab: this.props.delTab,
-        reloadTab: this.props.reloadTab
-      })
+      this.scheduleAutoReconnect(3000)
     }
   }
 
@@ -1550,7 +1520,6 @@ class Term extends Component {
           />
           <ReconnectOverlay
             countdown={this.state.reconnectCountdown}
-            onCancel={this.handleCancelAutoReconnect}
           />
           <DropFileModal
             visible={this.state.dropFileModalVisible}
