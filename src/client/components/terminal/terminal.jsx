@@ -958,9 +958,10 @@ class Term extends Component {
   }
 
   onSelectionChange = () => {
-    this.setState({
-      hasSelection: this.term.hasSelection()
-    })
+    const hasSelection = this.term.hasSelection()
+    const txt = hasSelection ? this.term.getSelection().trim() : ''
+    this.setState({ hasSelection })
+    refsStatic.get('unix-timestamp-tooltip')?.onSelection(txt)
   }
 
   // setActive = () => {

@@ -36,6 +36,7 @@ import WorkspaceSaveModal from '../tabs/workspace-save-modal'
 import BookmarkFromHistoryModal from '../bookmark-form/bookmark-from-history-modal'
 import AutoSync from '../setting-sync/auto-sync'
 import BatchOpRunner from '../batch-op/batch-op-runner'
+import UnixTimestampTooltip from '../terminal/unix-timestamp-tooltip'
 import { pick } from 'lodash-es'
 import deepCopy from 'json-deep-copy'
 import './wrapper.styl'
@@ -297,6 +298,7 @@ export default auto(function Index (props) {
         <NotificationContainer />
         <BatchOpRunner />
         <AIConfigModal store={store} />
+        <UnixTimestampTooltip />
       </div>
     </ConfigProvider>
   )
