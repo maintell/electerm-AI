@@ -105,6 +105,10 @@ function runWidget (widgetId, config) {
         ...result
       }
     })
+    .catch((err) => {
+      runningInstances.delete(instance.instanceId)
+      return instance.stop().catch(() => {}).then(() => { throw err })
+    })
 }
 
 function stopWidget (instanceId) {
