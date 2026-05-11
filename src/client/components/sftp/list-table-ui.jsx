@@ -2,8 +2,8 @@
  * file list table
  */
 
-import { Component } from 'react'
-import { Dropdown, Pagination } from 'antd'
+import { Component, createRef } from 'react'
+import { Dropdown } from 'antd'
 import classnames from 'classnames'
 import FileSection from './file-item'
 import PagedList from './paged-list'
@@ -19,7 +19,25 @@ const e = window.translate
 export default class FileListTable extends Component {
   constructor (props) {
     super(props)
-    this.state = this.initFromProps()
+    this.state = {
+      ...this.initFromProps(),
+      scrollTop: 0
+    }
+  }
+
+  containerRef = createRef()
+
+  componentDidUpdate (prevProps) {
+    if (prevProps.fileList !== this.props.fileList) {
+      if (this.containerRef.current) {
+        this.containerRef.current.scrollTop = 0
+      }
+      this.setState({ scrollTop: 0 })
+    }
+  }
+
+  onScroll = (e) => {
+    this.setState({ scrollTop: e.target.scrollTop })
   }
 
   initFromProps = (pps = this.getPropsDefault()) => {
@@ -36,9 +54,7 @@ export default class FileListTable extends Component {
       }
     })
     return {
-      pageSize: 100,
-      properties,
-      page: 1
+      properties
     }
   }
 
@@ -171,40 +187,6 @@ export default class FileListTable extends Component {
     'left'
   ]
 
-  hasPager = () => {
-    const {
-      pageSize
-    } = this.state
-    const {
-      fileList
-    } = this.props
-    const len = fileList.length
-    return len > pageSize
-  }
-
-  onPageChange = (page) => {
-    this.setState({ page })
-  }
-
-  renderPager () {
-    const { page, pageSize } = this.state
-    const { fileList } = this.props
-    const props = {
-      current: page,
-      pageSize,
-      total: fileList.length,
-      showLessItems: true,
-      showSizeChanger: false,
-      simple: false,
-      onChange: this.onPageChange
-    }
-    return (
-      <div className='pd1b pager-wrap'>
-        <Pagination {...props} />
-      </div>
-    )
-  }
-
   // reset
   resetWidth = () => {
     this.setState(this.initFromProps())
@@ -293,24 +275,19 @@ export default class FileListTable extends Component {
 
   render () {
     const { fileList, height, type } = this.props
-    // const tableHeaderHeight = 30
-    // const sh = sshSftpSplitView ? 0 : 32
+    const containerHeight = height - 42 - 30 - 32 - 90
     const props = {
+      ref: this.containerRef,
       className: 'sftp-table-content overscroll-y relative',
       style: {
-        height: height - 42 - 30 - 32 - 90
+        height: containerHeight
       },
       draggable: false,
+      onScroll: this.onScroll,
       onClick: this.handleClick,
       onDoubleClick: this.handleDoubleClick
     }
-    const hasPager = this.hasPager()
-    const cls = classnames(
-      'sftp-table relative',
-      {
-        'sftp-has-pager': hasPager
-      }
-    )
+    const cls = classnames('sftp-table relative')
     const ddProps = {
       menu: {
         items: this.renderContextMenuFile(),
@@ -338,13 +315,11 @@ export default class FileListTable extends Component {
             <PagedList
               list={fileList}
               renderItem={this.renderItem}
-              hasPager={hasPager}
-              page={this.state.page}
-              pageSize={this.state.pageSize}
+              scrollTop={this.state.scrollTop}
+              containerHeight={containerHeight}
             />
           </div>
         </Dropdown>
-        {hasPager && this.renderPager()}
       </div>
     )
   }

@@ -1,56 +1,56 @@
 /**
- * file list module to limit files rendered to increase performance
+ * Virtual list for SFTP file list.
+ *
+ * Scroll state is owned by the parent (list-table-ui) via React's onScroll prop
+ * on the scrollable container, and passed down as `scrollTop`. This avoids the
+ * React lifecycle ordering bug where a child's componentDidMount fires before the
+ * parent div's ref is assigned, making addEventListener attach to null.
+ *
+ * Uses spacers (top/bottom divs) so the container's scrollbar reflects the full
+ * list height while only the visible window (± OVERSCAN) is in the DOM.
+ *
+ * offsetTop is read from rootRef.offsetTop at render time — the distance from the
+ * scroll container's top edge to this list's top edge (accounts for the ".." parent
+ * row above the list).
  */
 
-import { Component } from 'react'
-import { Pagination } from 'antd'
+import { Component, createRef } from 'react'
 
-export default class ScrollFiles extends Component {
-  state = {
-    page: 1,
-    pageSize: 100
-  }
+const ITEM_SIZE = 36 // 32px item height + 4px margin-bottom
+const OVERSCAN = 5
 
-  onChange = page => {
-    this.setState({
-      page
-    })
-  }
-
-  renderList () {
-    const page = this.props.page ?? this.state.page
-    const pageSize = this.props.pageSize ?? this.state.pageSize
-    const start = (page - 1) * pageSize
-    const end = start + pageSize
-    const {
-      list, hasPager
-    } = this.props
-    const arr = hasPager
-      ? list.slice(start, end)
-      : list
-    return arr.map((item, index) => this.props.renderItem(item, index))
-  }
-
-  renderPager () {
-    const props = {
-      current: this.state.page,
-      pageSize: this.state.pageSize,
-      total: this.props.list.length,
-      showLessItems: true,
-      showSizeChanger: false,
-      simple: false,
-      onChange: this.onChange
-    }
-    return (
-      <div className='pd1b pager-wrap'>
-        <Pagination
-          {...props}
-        />
-      </div>
-    )
-  }
+export default class VirtualList extends Component {
+  rootRef = createRef()
 
   render () {
-    return this.renderList()
+    const { list, renderItem, containerHeight = 400, scrollTop = 0 } = this.props
+
+    // offsetTop: distance from scroll container top to this list's top.
+    // rootRef.offsetTop is relative to the nearest positioned ancestor, which is
+    // .sftp-table-content (position: relative) — exactly the scroll container.
+    // Returns 0 on first render (rootRef not yet set); harmless (renders a few extra items).
+    const offsetTop = this.rootRef.current?.offsetTop ?? 0
+
+    const startIndex = Math.max(
+      0,
+      Math.floor((scrollTop - offsetTop) / ITEM_SIZE) - OVERSCAN
+    )
+    const endIndex = Math.min(
+      list.length - 1,
+      Math.ceil((scrollTop + containerHeight - offsetTop) / ITEM_SIZE) + OVERSCAN
+    )
+
+    const topSpacerHeight = startIndex * ITEM_SIZE
+    const bottomSpacerHeight = Math.max(0, (list.length - endIndex - 1) * ITEM_SIZE)
+
+    return (
+      <div ref={this.rootRef}>
+        <div style={{ height: topSpacerHeight }} />
+        {list.slice(startIndex, endIndex + 1).map((item, i) =>
+          renderItem(item, startIndex + i)
+        )}
+        <div style={{ height: bottomSpacerHeight }} />
+      </div>
+    )
   }
 }
