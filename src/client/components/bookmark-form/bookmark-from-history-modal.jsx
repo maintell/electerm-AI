@@ -49,7 +49,6 @@ export default class BookmarkFromHistoryModal extends React.PureComponent {
       ...tab,
       id: generate()
     }
-    console.log(r)
     delete r.parentId
     delete r.category
     return r
