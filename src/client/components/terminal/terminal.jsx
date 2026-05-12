@@ -1,5 +1,4 @@
 import { Component, createRef } from 'react'
-import { handleErr } from '../../common/fetch.jsx'
 import { isEqual, pick, debounce, throttle } from 'lodash-es'
 import clone from '../../common/to-simple-obj.js'
 import resolve from '../../common/resolve.js'
@@ -48,6 +47,7 @@ import createDefaultLogPath from '../../common/default-log-path.js'
 import SearchResultBar from './terminal-search-bar'
 import RemoteFloatControl from '../common/remote-float-control'
 import ReconnectOverlay from './reconnect-overlay.jsx'
+import TerminalErrorHandle from './terminal-error-handle.jsx'
 import {
   loadTerminal,
   loadFitAddon,
@@ -76,6 +76,7 @@ class Term extends Component {
       matchIndex: -1,
       totalLines: 0,
       reconnectCountdown: null,
+      terminalError: null,
       dropFileModalVisible: false,
       droppedFiles: []
     }
@@ -1164,7 +1165,8 @@ class Term extends Component {
 
   remoteInit = async (term = this.term) => {
     this.setState({
-      loading: true
+      loading: true,
+      terminalError: null
     })
     const { cols, rows } = term
     const { config } = this.props
@@ -1242,7 +1244,7 @@ class Term extends Component {
       .catch(err => {
         if (!isAutoReconnect) {
           const text = err.message
-          handleErr({ message: text })
+          this.handleError({ message: text, from, srcId })
         }
       })
     if (typeof r === 'string' && r.includes('fail')) {
@@ -1296,6 +1298,29 @@ class Term extends Component {
     term.loadAddon(
       new KeywordHighlighterAddon(keywords)
     )
+  }
+
+  handleError = ({ message: errorMessage, from, srcId }) => {
+    this.setState({
+      terminalError: {
+        message: errorMessage || 'Failed to create terminal session',
+        from,
+        srcId
+      }
+    })
+  }
+
+  handleEditBookmarkFromError = () => {
+    const error = this.state.terminalError
+    if (!error || error.from !== 'bookmarks' || !error.srcId) {
+      return
+    }
+    const item = window.store.bookmarksMap?.get(error.srcId) ||
+      window.store.bookmarks?.find(d => d.id === error.srcId)
+    if (!item) {
+      return
+    }
+    window.store.openBookmarkEdit(item)
   }
 
   initSocketEvents = () => {
@@ -1517,6 +1542,11 @@ class Term extends Component {
           <SearchResultBar {...barProps} />
           <RemoteFloatControl
             isFullScreen={fullscreen}
+          />
+          <TerminalErrorHandle
+            errorMessage={this.state.terminalError?.message}
+            showEditBookmarkButton={this.state.terminalError?.from === 'bookmarks' && !!this.state.terminalError?.srcId}
+            onEditBookmark={this.handleEditBookmarkFromError}
           />
           <ReconnectOverlay
             countdown={this.state.reconnectCountdown}
