@@ -42,7 +42,7 @@ describe('timeout setting', function () {
     log('0101.timeout-setting.spec.js: ssh form submitted')
     await delay(5500)
     log('0101.timeout-setting.spec.js: waited after submit')
-    const errSel = '.notification .notification-content'
+    const errSel = '.terminal-error-handle .ant-alert-title'
     log('0101.timeout-setting.spec.js: starting error check loop')
     for (let i = 0; i < 25; i++) {
       await delay(500)
