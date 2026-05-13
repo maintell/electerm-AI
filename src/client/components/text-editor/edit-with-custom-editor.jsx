@@ -58,7 +58,7 @@ export default function EditWithCustomEditor ({ loading, editWithCustom }) {
         disabled={loading}
       />
       <Button
-        type={autoOpen ? 'primary' : 'dashed'}
+        type={autoOpen ? 'primary' : 'default'}
         disabled={loading}
         onClick={handleToggleAutoOpen}
       >
