@@ -243,13 +243,16 @@ export default class AttachAddonCustom {
   sendToServer = (data) => {
     this._lastInputTime = Date.now()
     // Start echo detection when password prompt is suspected
-    if (this._passwordPromptDetected && !this._pendingEchoCheck && data !== '\r' && data !== '\n') {
+    if (this._passwordPromptDetected && !this._pendingEchoCheck && data !== '\r' && data !== '\n' && data !== '\x03') {
       this._pendingEchoCheck = { char: data, time: Date.now() }
       clearTimeout(this._echoCheckTimer)
       this._echoCheckTimer = setTimeout(this._onEchoCheckTimeout, 200)
     }
-    // Reset password state on Enter
-    if (data === '\r' || data === '\n') {
+    // Reset password state on Enter or Ctrl+C
+    if (data === '\r' || data === '\n' || data === '\x03') {
+      if (this._passwordPromptDetected) {
+        this.term?.parent?.onPasswordPromptCancelled?.()
+      }
       this._passwordPromptDetected = false
       this._lastOutputLine = ''
       this._pendingEchoCheck = null

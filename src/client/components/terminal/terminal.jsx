@@ -830,6 +830,7 @@ class Term extends Component {
   }
 
   onPasswordPromptDetected = () => {
+    window.store.notifyTabPasswordPrompt(this.props.tab.id)
     if (!this.props.config.showCmdSuggestions) {
       return
     }
@@ -842,6 +843,7 @@ class Term extends Component {
   }
 
   onPasswordPromptCancelled = () => {
+    window.store.clearTabPasswordPrompt(this.props.tab.id)
     const suggestions = refsStatic.get('terminal-suggestions')
     if (suggestions?.state?.passwordMode) {
       suggestions.closeSuggestions()

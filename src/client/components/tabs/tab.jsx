@@ -8,7 +8,8 @@ import { refsTabs } from '../common/ref'
 import {
   CloseOutlined,
   Loading3QuartersOutlined,
-  BorderlessTableOutlined
+  BorderlessTableOutlined,
+  LockOutlined
 } from '@ant-design/icons'
 import {
   Tooltip,
@@ -33,7 +34,7 @@ class Tab extends Component {
   constructor (props) {
     super(props)
     this.state = {
-      terminalOnData: false
+      terminalOnData: ''
     }
     this.id = 'tab-' + this.props.tab.id
     refsTabs.add(this.id, this)
@@ -48,19 +49,38 @@ class Tab extends Component {
   }
 
   notifyOnData = () => {
+    if (this.state.terminalOnData === 'password') {
+      return
+    }
     if (this.timer) {
       clearTimeout(this.timer)
       this.timer = null
     }
     this.setState({
-      terminalOnData: true
+      terminalOnData: 'feed'
     })
     this.timer = setTimeout(this.clearTerminalOnData, 4000)
   }
 
   clearTerminalOnData = () => {
     this.setState({
-      terminalOnData: false
+      terminalOnData: ''
+    })
+  }
+
+  notifyPasswordPrompt = () => {
+    if (this.timer) {
+      clearTimeout(this.timer)
+      this.timer = null
+    }
+    this.setState({
+      terminalOnData: 'password'
+    })
+  }
+
+  clearPasswordPrompt = () => {
+    this.setState({
+      terminalOnData: ''
     })
   }
 
@@ -492,7 +512,8 @@ class Tab extends Component {
           </Dropdown>
           <div className={'tab-status ' + status} />
           {isTransporting && <div className='tab-traffic' />}
-          {terminalOnData && <BorderlessTableOutlined className='tab-terminal-feed' />}
+          {terminalOnData === 'feed' && <BorderlessTableOutlined className='tab-terminal-feed' />}
+          {terminalOnData === 'password' && <LockOutlined className='tab-terminal-feed password' />}
           {
             this.renderCloseIcon()
           }

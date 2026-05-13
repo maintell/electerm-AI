@@ -622,6 +622,20 @@ export default Store => {
     }
   }
 
+  Store.prototype.notifyTabPasswordPrompt = function (tabId) {
+    const tab = refsTabs.get('tab-' + tabId)
+    if (tab) {
+      tab.notifyPasswordPrompt()
+    }
+  }
+
+  Store.prototype.clearTabPasswordPrompt = function (tabId) {
+    const tab = refsTabs.get('tab-' + tabId)
+    if (tab) {
+      tab.clearPasswordPrompt()
+    }
+  }
+
   Store.prototype.remoteList = function (tabId) {
     const sftp = refs.get('sftp-' + tabId)
     if (sftp) {
