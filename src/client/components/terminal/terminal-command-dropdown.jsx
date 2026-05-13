@@ -278,7 +278,7 @@ export default class TerminalCmdSuggestions extends Component {
           id: uid(),
           command: b.password,
           type: 'PW',
-          hint: [b.username, b.host].filter(Boolean).join('@')
+          hint: [b.username, [b.host, b.port].filter(Boolean).join(':')].filter(Boolean).join('@')
         })
       }
     }
