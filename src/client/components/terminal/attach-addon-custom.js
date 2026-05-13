@@ -223,6 +223,7 @@ export default class AttachAddonCustom {
     }
 
     if (typeof data === 'string') {
+      term?.parent?.notifyOnData()
       return term.write(data)
     }
     data = new Uint8Array(data)
