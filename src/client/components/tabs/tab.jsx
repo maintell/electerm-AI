@@ -424,13 +424,7 @@ class Tab extends Component {
       {
         'tab-last': isLast
       },
-      status,
-      {
-        'is-terminal-active': terminalOnData
-      },
-      {
-        'is-transporting': isTransporting
-      }
+      status
     )
     const title = createName(tab)
     let tooltipTitle = title
@@ -481,11 +475,15 @@ class Tab extends Component {
               onClick={this.handleClick}
               onDoubleClick={this.handleDup}
             >
-              <Loading3QuartersOutlined
-                className='pointer tab-reload mg1r'
-                onClick={this.handleReloadTab}
-                title={e('reload')}
-              />
+              {
+                status === 'error' && (
+                  <Loading3QuartersOutlined
+                    className='pointer tab-reload mg1r'
+                    onClick={this.handleReloadTab}
+                    title={e('reload')}
+                  />
+                )
+              }
               <span className='tab-title'>
                 <span className='iblock mg1r tab-count' style={styleTag}>{tabCount}</span>
                 <span className='mg1r'>{title}</span>
@@ -493,8 +491,8 @@ class Tab extends Component {
             </div>
           </Dropdown>
           <div className={'tab-status ' + status} />
-          <div className='tab-traffic' />
-          <BorderlessTableOutlined className='tab-terminal-feed' />
+          {isTransporting && <div className='tab-traffic' />}
+          {terminalOnData && <BorderlessTableOutlined className='tab-terminal-feed' />}
           {
             this.renderCloseIcon()
           }

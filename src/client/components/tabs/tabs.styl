@@ -46,7 +46,6 @@
   color var(--text-dark)
   &.tab-last
     margin-right 5px
-  .tab-reload
   .tab-close
     display none
   &.active
@@ -68,10 +67,6 @@
     width 1px
     border 1px dashed var(--text-dark)
     height 36px
-  &.error
-    .tab-reload
-      display inline-block
-      color var(--text-light)
 @keyframes blink
   0%
     background-color #e0e0e0
@@ -96,23 +91,13 @@
     background-color var(--error)
   &.processing
     background-color var(--primary)
-.is-transporting .tab-traffic
-  display block
-  animation blink 2s infinite
-  /* Remove opacity animation, use background-color */
 .tab-traffic
-  display none
   left 10px
   width 5px
   border-radius 0
   background-color var(--success)
-.is-terminal-active .tab-terminal-feed
-  display block
   animation blink 2s infinite
-  background-color transparent !important
-  /* Remove opacity animation, use background-color */
 .tab-terminal-feed
-  display none
   left 20px
   border-radius 0
   color var(--success)
@@ -120,6 +105,8 @@
   left 2px
   top 24px
   background none
+  background-color transparent !important
+  animation blink 2s infinite
 .tab-close
   position absolute
   right 5px
