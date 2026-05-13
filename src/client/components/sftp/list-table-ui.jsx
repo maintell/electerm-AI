@@ -28,7 +28,11 @@ export default class FileListTable extends Component {
   containerRef = createRef()
 
   componentDidUpdate (prevProps) {
-    if (prevProps.fileList !== this.props.fileList) {
+    const prevList = prevProps.fileList
+    const nextList = this.props.fileList
+    const contentChanged = prevList.length !== nextList.length ||
+      prevList.some((f, i) => f.id !== nextList[i].id)
+    if (contentChanged) {
       if (this.containerRef.current) {
         this.containerRef.current.scrollTop = 0
       }
