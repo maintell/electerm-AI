@@ -6,18 +6,30 @@ import { useState } from 'react'
 import { Button, Input, Space } from 'antd'
 import { safeGetItem, safeSetItem } from '../../common/safe-local-storage.js'
 
-const LS_KEY = 'customEditorCommand'
+export const CUSTOM_EDITOR_COMMAND_LS_KEY = 'customEditorCommand'
+export const CUSTOM_EDITOR_AUTO_OPEN_LS_KEY = 'customEditorAutoOpen'
 const e = window.translate
 
 export default function EditWithCustomEditor ({ loading, editWithCustom }) {
   const [editorCommand, setEditorCommand] = useState(
-    () => safeGetItem(LS_KEY) || ''
+    () => safeGetItem(CUSTOM_EDITOR_COMMAND_LS_KEY) || ''
   )
+  const [autoOpen, setAutoOpen] = useState(
+    () => safeGetItem(CUSTOM_EDITOR_AUTO_OPEN_LS_KEY) === 'true'
+  )
+
+  const autoOpenLabel = e('autoOpen')
 
   function handleChange (ev) {
     const val = ev.target.value
     setEditorCommand(val)
-    safeSetItem(LS_KEY, val)
+    safeSetItem(CUSTOM_EDITOR_COMMAND_LS_KEY, val)
+  }
+
+  function handleToggleAutoOpen () {
+    const next = !autoOpen
+    setAutoOpen(next)
+    safeSetItem(CUSTOM_EDITOR_AUTO_OPEN_LS_KEY, String(next))
   }
 
   function handleClick () {
@@ -45,6 +57,13 @@ export default function EditWithCustomEditor ({ loading, editWithCustom }) {
         onChange={handleChange}
         disabled={loading}
       />
+      <Button
+        type={autoOpen ? 'primary' : 'dashed'}
+        disabled={loading}
+        onClick={handleToggleAutoOpen}
+      >
+        {autoOpenLabel}: {autoOpen ? 'On' : 'Off'}
+      </Button>
     </Space.Compact>
   )
 }
