@@ -491,7 +491,7 @@ class Tab extends Component {
         >
           <Dropdown {...dropdownProps}>
             <div
-              className='tab-title elli pd1x'
+              className='tab-title elli'
               onClick={this.handleClick}
               onDoubleClick={this.handleDup}
             >
