@@ -2,6 +2,7 @@ import TreeExpander from './tree-expander'
 import TreeListItem from './tree-list-item'
 import TreeItemOp from './tree-item-op'
 import { treeLevelIndent } from './tree-list-layout'
+import createName from '../../common/create-title'
 
 export default function TreeListRow (props) {
   const {
@@ -38,6 +39,10 @@ export default function TreeListRow (props) {
     item,
     isGroup,
     parentId,
+    itemLabel: isGroup ? (item?.title || '') : createName(item),
+    itemColor: item?.color,
+    itemDescription: item?.description,
+    itemLevel: item?.level,
     leftSidebarWidth,
     staticList,
     selectedItemId: activeItemId,
