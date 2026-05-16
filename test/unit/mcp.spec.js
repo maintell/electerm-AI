@@ -928,4 +928,218 @@ describe('mcp-widget', function () {
       throw err
     }
   })
+
+  // Helper: call a tool and parse the SSE response into JSON result/error
+  async function callTool (sid, id, toolName, args) {
+    const response = await makeHttpRequest('post', serverUrl, {
+      jsonrpc: '2.0',
+      id,
+      method: 'tools/call',
+      params: { name: toolName, arguments: args }
+    }, {
+      'Content-Type': 'application/json',
+      Accept: 'application/json, text/event-stream',
+      'mcp-session-id': sid
+    })
+    assert.equal(response.status, 200)
+    const dataLine = response.data.split('\n').find(l => l.startsWith('data: '))
+    assert.ok(dataLine, `No data line in SSE response for ${toolName}`)
+    const jsonData = JSON.parse(dataLine.substring(6))
+    assert.equal(jsonData.jsonrpc, '2.0')
+    assert.equal(jsonData.id, id)
+    return jsonData
+  }
+
+  // Test that list_tabs exposes the onData flag per tab
+  test('list_tabs should include onData field for each tab', { timeout: 100000 }, async function () {
+    if (!sessionId) sessionId = await initSession()
+    assert.ok(sessionId)
+
+    const jsonData = await callTool(sessionId, 60, 'list_electerm_tabs', {})
+
+    if (jsonData.error) {
+      // No renderer → expected in headless CI
+      console.log('list_tabs error (expected without renderer):', jsonData.error.message)
+      return
+    }
+
+    const tabs = JSON.parse(jsonData.result.content[0].text)
+    console.log('Tabs from list_tabs:', tabs)
+    assert.ok(Array.isArray(tabs), 'Expected an array of tabs')
+
+    for (const tab of tabs) {
+      assert.ok('onData' in tab, `Tab ${tab.id} is missing the onData field`)
+      assert.equal(typeof tab.onData, 'boolean', `onData for tab ${tab.id} should be boolean`)
+    }
+
+    console.log(`list_tabs returned ${tabs.length} tabs, all with onData field`)
+  })
+
+  // Test wait_for_electerm_terminal_idle after a fast command (echo)
+  test('should wait for terminal idle after a quick echo command', { timeout: 100000 }, async function () {
+    if (!sessionId) sessionId = await initSession()
+    assert.ok(sessionId)
+
+    // Open a local terminal
+    const openData = await callTool(sessionId, 61, 'open_electerm_local_terminal', {})
+    if (openData.error) {
+      console.log('open_local_terminal error (no renderer):', openData.error.message)
+      return
+    }
+    const openResult = JSON.parse(openData.result.content[0].text)
+    assert.equal(openResult.success, true)
+
+    // Wait for shell to initialize
+    await new Promise(resolve => setTimeout(resolve, 3000))
+
+    const marker = `IDLE_TEST_${Date.now()}`
+
+    // Send a quick echo command
+    const sendData = await callTool(sessionId, 62, 'send_electerm_terminal_command', {
+      command: `echo "${marker}"`
+    })
+    if (sendData.error) {
+      console.log('send_command error:', sendData.error.message)
+      return
+    }
+    console.log('Command sent, now waiting for terminal idle...')
+
+    // Wait for idle — should settle within ~10s (1s minWait + 4s debounce + buffer)
+    const waitData = await callTool(sessionId, 63, 'wait_for_electerm_terminal_idle', {
+      timeout: 20000,
+      lines: 30
+    })
+
+    if (waitData.error) {
+      console.log('wait_for_terminal_idle error:', waitData.error.message)
+      return
+    }
+
+    const waitResult = JSON.parse(waitData.result.content[0].text)
+    console.log('wait_for_terminal_idle result:', {
+      timedOut: waitResult.timedOut,
+      elapsed: waitResult.elapsed,
+      lineCount: waitResult.lineCount
+    })
+
+    assert.equal(waitResult.timedOut, false, 'Expected terminal to become idle before timeout')
+    assert.ok(waitResult.elapsed >= 0, 'Expected non-negative elapsed time')
+    assert.ok(typeof waitResult.lineCount === 'number', 'Expected lineCount to be a number')
+    assert.ok(typeof waitResult.output === 'string', 'Expected output to be a string')
+
+    if (waitResult.output.includes(marker)) {
+      console.log('SUCCESS: Found echo output in terminal after idle wait!')
+    } else {
+      console.log('Echo marker not found in output (may be in scrollback); output tail:', waitResult.output.slice(-200))
+    }
+
+    console.log(`Idle detected after ${waitResult.elapsed}ms`)
+  })
+
+  // Test wait_for_electerm_terminal_idle with a longer-running command
+  test('should correctly wait for a longer-running command to finish', { timeout: 100000 }, async function () {
+    if (!sessionId) sessionId = await initSession()
+    assert.ok(sessionId)
+
+    // Ensure a terminal is open (reuse from previous test or open one)
+    const openData = await callTool(sessionId, 64, 'open_electerm_local_terminal', {})
+    if (openData.error) {
+      console.log('open_local_terminal error (no renderer):', openData.error.message)
+      return
+    }
+    await new Promise(resolve => setTimeout(resolve, 3000))
+
+    const marker = `SLOW_TEST_${Date.now()}`
+    // Command takes ~5 seconds before producing output
+    const sendData = await callTool(sessionId, 65, 'send_electerm_terminal_command', {
+      command: `sleep 5 && echo "${marker}"`
+    })
+    if (sendData.error) {
+      console.log('send_command error:', sendData.error.message)
+      return
+    }
+
+    const t0 = Date.now()
+    console.log('Long command sent, waiting for idle (up to 30s)...')
+
+    // wait_for_terminal_idle should not return until sleep 5 finishes
+    const waitData = await callTool(sessionId, 66, 'wait_for_electerm_terminal_idle', {
+      timeout: 30000,
+      lines: 30
+    })
+
+    if (waitData.error) {
+      console.log('wait_for_terminal_idle error:', waitData.error.message)
+      return
+    }
+
+    const waitResult = JSON.parse(waitData.result.content[0].text)
+    const roundTrip = Date.now() - t0
+    console.log('wait_for_terminal_idle result:', {
+      timedOut: waitResult.timedOut,
+      elapsed: waitResult.elapsed,
+      roundTripMs: roundTrip,
+      lineCount: waitResult.lineCount
+    })
+
+    // Command takes ~5s + 4s idle debounce = ~9s minimum
+    assert.equal(waitResult.timedOut, false, 'Expected terminal to become idle before 30s timeout')
+    assert.ok(waitResult.elapsed >= 5000, `Expected at least 5s elapsed but got ${waitResult.elapsed}ms`)
+
+    if (waitResult.output.includes(marker)) {
+      console.log('SUCCESS: Slow command output found after idle wait!')
+    } else {
+      console.log('Output tail:', waitResult.output.slice(-300))
+    }
+  })
+
+  // Test wait_for_electerm_terminal_idle timing out on a never-ending command
+  test('should return timedOut:true when terminal never becomes idle within timeout', { timeout: 100000 }, async function () {
+    if (!sessionId) sessionId = await initSession()
+    assert.ok(sessionId)
+
+    const openData = await callTool(sessionId, 67, 'open_electerm_local_terminal', {})
+    if (openData.error) {
+      console.log('open_local_terminal error (no renderer):', openData.error.message)
+      return
+    }
+    await new Promise(resolve => setTimeout(resolve, 3000))
+
+    // Start a command that will keep producing output for longer than our timeout
+    // `yes` or `ping -c 100 localhost` both work; use ping for portability
+    const sendData = await callTool(sessionId, 68, 'send_electerm_terminal_command', {
+      command: 'ping -c 30 localhost'
+    })
+    if (sendData.error) {
+      console.log('send_command error:', sendData.error.message)
+      return
+    }
+
+    console.log('Continuous-output command sent, waiting with 8s timeout...')
+
+    // Use a short timeout — the ping will still be running, so we expect timedOut:true
+    const waitData = await callTool(sessionId, 69, 'wait_for_electerm_terminal_idle', {
+      timeout: 8000,
+      lines: 20,
+      minWait: 500
+    })
+
+    if (waitData.error) {
+      console.log('wait_for_terminal_idle error:', waitData.error.message)
+      return
+    }
+
+    const waitResult = JSON.parse(waitData.result.content[0].text)
+    console.log('Timeout test result:', {
+      timedOut: waitResult.timedOut,
+      elapsed: waitResult.elapsed,
+      lineCount: waitResult.lineCount
+    })
+
+    assert.equal(waitResult.timedOut, true, 'Expected timedOut:true when command keeps running')
+    assert.ok(waitResult.elapsed >= 8000, `Expected at least 8s elapsed but got ${waitResult.elapsed}ms`)
+    assert.ok(typeof waitResult.output === 'string', 'Should still return whatever output is in buffer')
+    console.log('Partial output tail:', waitResult.output.slice(-200))
+    console.log('SUCCESS: timedOut correctly reported as true')
+  })
 })

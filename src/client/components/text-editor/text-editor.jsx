@@ -4,9 +4,14 @@
 
 import { PureComponent } from 'react'
 import TextEditorForm from './text-editor-form'
+import {
+  CUSTOM_EDITOR_AUTO_OPEN_LS_KEY,
+  CUSTOM_EDITOR_COMMAND_LS_KEY
+} from './edit-with-custom-editor'
 import { Spin } from 'antd'
 import Modal from '../common/modal'
 import resolve from '../../common/resolve'
+import { safeGetItem } from '../../common/safe-local-storage.js'
 import { refsStatic, refs } from '../common/ref'
 
 const e = window.translate
@@ -69,10 +74,26 @@ export default class TextEditor extends PureComponent {
       return
     }
     const text = await fileRef.fetchEditorText(p, type)
+    const editorCommand = this.getAutoOpenCustomEditorCommand()
     this.setStateProxy({
       text,
       loading: false
+    }, () => {
+      if (editorCommand) {
+        this.editWithCustom(editorCommand)
+      }
     })
+  }
+
+  getAutoOpenCustomEditorCommand = () => {
+    if (window.et.isWebApp) {
+      return ''
+    }
+    const autoOpen = safeGetItem(CUSTOM_EDITOR_AUTO_OPEN_LS_KEY) === 'true'
+    if (!autoOpen) {
+      return ''
+    }
+    return safeGetItem(CUSTOM_EDITOR_COMMAND_LS_KEY).trim()
   }
 
   doSubmit = () => {

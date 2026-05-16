@@ -5,7 +5,7 @@
 
 import uid from '../common/uid'
 import { settingMap } from '../common/constants'
-import { refs } from '../components/common/ref'
+import { refs, refsTabs } from '../components/common/ref'
 import deepCopy from 'json-deep-copy'
 import {
   getLocalFileInfo,
@@ -106,6 +106,9 @@ export default Store => {
           break
         case 'get_terminal_output':
           result = store.mcpGetTerminalOutput(args)
+          break
+        case 'wait_for_terminal_idle':
+          result = await store.mcpWaitForTerminalIdle(args)
           break
 
         // SFTP operations
@@ -331,15 +334,18 @@ export default Store => {
 
   Store.prototype.mcpListTabs = function () {
     const { store } = window
-    return store.tabs.map(t => ({
-      id: t.id,
-      title: t.title,
-      host: t.host,
-      type: t.type || 'local',
-      status: t.status,
-      isTransporting: t.isTransporting,
-      batch: t.batch
-    }))
+    return store.tabs.map(t => {
+      return {
+        id: t.id,
+        title: t.title,
+        host: t.host,
+        type: t.type || 'local',
+        status: t.status,
+        isTransporting: t.isTransporting,
+        onData: refsTabs.get('tab-' + t.id)?.state.terminalOnData,
+        batch: t.batch
+      }
+    })
   }
 
   Store.prototype.mcpGetActiveTab = function () {
@@ -524,6 +530,73 @@ export default Store => {
       cursorY,
       baseY,
       tabId
+    }
+  }
+
+  Store.prototype.mcpWaitForTerminalIdle = async function (args) {
+    const { store } = window
+    const tabId = args.tabId || store.activeTabId
+    const timeout = Math.min(args.timeout || 30000, 120000)
+    const pollInterval = 500
+    const minWait = args.minWait !== undefined ? args.minWait : 1000
+    const lineCountToFetch = args.lines || 50
+
+    if (!tabId) {
+      throw new Error('No active terminal')
+    }
+
+    const start = Date.now()
+
+    // Brief initial wait so the command has time to start producing output
+    if (minWait > 0) {
+      await new Promise(resolve => setTimeout(resolve, minWait))
+    }
+
+    const collectOutput = () => {
+      const term = refs.get('term-' + tabId)
+      if (!term || !term.term) return { output: '', lineCount: 0 }
+      const buffer = term.term.buffer.active
+      if (!buffer) return { output: '', lineCount: 0 }
+      const cursorY = buffer.cursorY || 0
+      const baseY = buffer.baseY || 0
+      const totalLines = buffer.length || 0
+      const actualContentEnd = baseY + cursorY + 1
+      const startLine = Math.max(0, actualContentEnd - lineCountToFetch)
+      const endLine = Math.min(totalLines, actualContentEnd)
+      const lines = []
+      for (let i = startLine; i < endLine; i++) {
+        const line = buffer.getLine(i)
+        if (line) lines.push(line.translateToString(true))
+      }
+      return { output: lines.join('\n'), lineCount: lines.length }
+    }
+
+    // Poll until onData becomes false (4s idle debounce in tab.jsx)
+    while (Date.now() - start < timeout) {
+      const tabRef = refsTabs.get('tab-' + tabId)
+      const onData = tabRef?.state.terminalOnData
+      if (!onData) {
+        const { output, lineCount } = collectOutput()
+        return {
+          tabId,
+          elapsed: Date.now() - start,
+          timedOut: false,
+          output,
+          lineCount
+        }
+      }
+      await new Promise(resolve => setTimeout(resolve, pollInterval))
+    }
+
+    // Timeout reached — return whatever is currently in the buffer
+    const { output, lineCount } = collectOutput()
+    return {
+      tabId,
+      elapsed: Date.now() - start,
+      timedOut: true,
+      message: `Terminal still active after ${timeout}ms`,
+      output,
+      lineCount
     }
   }
 

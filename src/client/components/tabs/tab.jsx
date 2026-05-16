@@ -8,7 +8,8 @@ import { refsTabs } from '../common/ref'
 import {
   CloseOutlined,
   Loading3QuartersOutlined,
-  BorderlessTableOutlined
+  BorderlessTableOutlined,
+  LockOutlined
 } from '@ant-design/icons'
 import {
   Tooltip,
@@ -33,7 +34,7 @@ class Tab extends Component {
   constructor (props) {
     super(props)
     this.state = {
-      terminalOnData: false
+      terminalOnData: ''
     }
     this.id = 'tab-' + this.props.tab.id
     refsTabs.add(this.id, this)
@@ -48,19 +49,38 @@ class Tab extends Component {
   }
 
   notifyOnData = () => {
+    if (this.state.terminalOnData === 'password') {
+      return
+    }
     if (this.timer) {
       clearTimeout(this.timer)
       this.timer = null
     }
     this.setState({
-      terminalOnData: true
+      terminalOnData: 'feed'
     })
     this.timer = setTimeout(this.clearTerminalOnData, 4000)
   }
 
   clearTerminalOnData = () => {
     this.setState({
-      terminalOnData: false
+      terminalOnData: ''
+    })
+  }
+
+  notifyPasswordPrompt = () => {
+    if (this.timer) {
+      clearTimeout(this.timer)
+      this.timer = null
+    }
+    this.setState({
+      terminalOnData: 'password'
+    })
+  }
+
+  clearPasswordPrompt = () => {
+    this.setState({
+      terminalOnData: ''
     })
   }
 
@@ -424,13 +444,7 @@ class Tab extends Component {
       {
         'tab-last': isLast
       },
-      status,
-      {
-        'is-terminal-active': terminalOnData
-      },
-      {
-        'is-transporting': isTransporting
-      }
+      status
     )
     const title = createName(tab)
     let tooltipTitle = title
@@ -477,15 +491,19 @@ class Tab extends Component {
         >
           <Dropdown {...dropdownProps}>
             <div
-              className='tab-title elli pd1x'
+              className='tab-title elli'
               onClick={this.handleClick}
               onDoubleClick={this.handleDup}
             >
-              <Loading3QuartersOutlined
-                className='pointer tab-reload mg1r'
-                onClick={this.handleReloadTab}
-                title={e('reload')}
-              />
+              {
+                status === 'error' && (
+                  <Loading3QuartersOutlined
+                    className='pointer tab-reload mg1r'
+                    onClick={this.handleReloadTab}
+                    title={e('reload')}
+                  />
+                )
+              }
               <span className='tab-title'>
                 <span className='iblock mg1r tab-count' style={styleTag}>{tabCount}</span>
                 <span className='mg1r'>{title}</span>
@@ -493,8 +511,9 @@ class Tab extends Component {
             </div>
           </Dropdown>
           <div className={'tab-status ' + status} />
-          <div className='tab-traffic' />
-          <BorderlessTableOutlined className='tab-terminal-feed' />
+          {isTransporting && <div className='tab-traffic' />}
+          {terminalOnData === 'feed' && <BorderlessTableOutlined className='tab-terminal-feed' />}
+          {terminalOnData === 'password' && <LockOutlined className='tab-terminal-feed password' />}
           {
             this.renderCloseIcon()
           }

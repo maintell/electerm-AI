@@ -55,6 +55,7 @@ export default function WidgetControl ({ formData, widgetInstancesLength }) {
       showMsg(msg, 'success', result.serverInfo, 10)
     } catch (err) {
       console.error('Failed to run widget:', err)
+      showMsg(`Failed to run widget: ${err.message}`, 'error', null, 10)
     } finally {
       setLoading(false)
     }

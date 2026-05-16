@@ -100,7 +100,7 @@ export async function addTabFromCommandLine (store, opts) {
     (conf.username && conf.host) ||
     conf.fromCmdLine
   ) {
-    store.addTab(conf)
+    store.ipcOpenTab(conf)
   } else if (
     options.initFolder &&
     !(store.config.onStartSessions || []).length &&
@@ -229,7 +229,7 @@ export default (Store) => {
   Store.prototype.checkPendingDeepLink = async function () {
     const pending = await window.pre.runGlobalAsync('getPendingDeepLink')
     if (pending) {
-      window.store.addTab(pending)
+      window.store.ipcOpenTab(pending)
     }
   }
   Store.prototype.parseQuickConnect = function (url) {

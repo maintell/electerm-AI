@@ -42,8 +42,8 @@ jobs:
       env:
         NODE_TEST: 1
         TEST_HOST: ${{ secrets.TEST_HOST }}
-        TEST_USER: ${{ secrets.TEST_USER_DARWIN1 }}
-        TEST_PASS: ${{ secrets.TEST_PASS_DARWIN1 }}
+        TEST_USER: ${{ secrets.TEST_USER_1 }}
+        TEST_PASS: ${{ secrets.TEST_PASS_1 }}
         GIST_TOKEN: ${{ secrets.GIST_TOKEN }}
         GIST_ID: ${{ secrets.GIST_ID }}
         GITEE_TOKEN: ${{ secrets.GITEE_TOKEN }}

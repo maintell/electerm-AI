@@ -7,7 +7,7 @@ import {
   MenuOutlined,
   EditOutlined
 } from '@ant-design/icons'
-import { Button, Space, Dropdown } from 'antd'
+import { Button, Space, Dropdown, Flex } from 'antd'
 import copy from 'json-deep-copy'
 import time from '../../common/time'
 import download from '../../common/download'
@@ -87,8 +87,8 @@ export default function BookmarkToolbar (props) {
   return (
 
     <div className='pd1b pd1r'>
-      <div className='fix'>
-        <div className='fleft'>
+      <Flex justify='space-between' align='center'>
+        <div>
           <Space.Compact>
             <Button onClick={onNewBookmark}>
               <BookOutlined className='with-plus' />
@@ -122,12 +122,12 @@ export default function BookmarkToolbar (props) {
             </Button>
           </Space.Compact>
         </div>
-        <div className='fright'>
+        <div>
           <Dropdown {...ddProps}>
             <MenuOutlined />
           </Dropdown>
         </div>
-      </div>
+      </Flex>
     </div>
   )
 }

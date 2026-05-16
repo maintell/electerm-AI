@@ -71,6 +71,29 @@ const { watchFile, unwatchFile } = require('./watch-file')
 const lookup = require('../common/lookup')
 const { AIchat, getStreamContent, stopStream } = require('./ai')
 
+// Security: whitelist of safe environment variables for Linux/Mac/Windows
+const SAFE_ENV_KEYS = [
+  'SHELL', 'TERM', 'TERM_PROGRAM', 'TERM_PROGRAM_VERSION', 'COLORTERM',
+  'LANG', 'LC_ALL', 'LC_CTYPE', 'LC_TERMINAL', 'LC_TERMINAL_VERSION',
+  'HOME', 'USER', 'LOGNAME', 'USERNAME',
+  'PATH', 'PATHEXT',
+  'TMPDIR', 'TMP', 'TEMP',
+  'DISPLAY', 'WAYLAND_DISPLAY', 'XDG_SESSION_TYPE', 'XDG_RUNTIME_DIR',
+  'XDG_DATA_DIRS', 'XDG_CONFIG_DIRS', 'XDG_CURRENT_DESKTOP', 'XDG_SEAT', 'XDG_VTNR',
+  'SSH_AUTH_SOCK', 'SSH_AGENT_PID', 'SSH_CLIENT', 'SSH_CONNECTION', 'SSH_TTY',
+  'NODE_PATH', 'NODE_ENV', 'NVM_DIR', 'NVM_BIN',
+  'NPM_CONFIG_PREFIX', 'NPM_CONFIG_CACHE',
+  'GIT_EDITOR', 'GIT_PAGER', 'GIT_TERMINAL_PROMPT',
+  'EDITOR', 'VISUAL', 'PAGER',
+  'HTTP_PROXY', 'HTTPS_PROXY', 'NO_PROXY', 'http_proxy', 'https_proxy', 'no_proxy',
+  'APPDATA', 'LOCALAPPDATA', 'ProgramFiles', 'ProgramFiles(x86)', 'CommonProgramFiles',
+  'ComSpec', 'SystemRoot', 'SystemDrive', 'USERPROFILE', 'USERDOMAIN',
+  'COMPUTERNAME', 'NUMBER_OF_PROCESSORS', 'PROCESSOR_ARCHITECTURE', 'OS',
+  'Apple_PubSub_Socket_Render',
+  'DBUS_SESSION_BUS_ADDRESS', 'DESKTOP_SESSION', 'GNOME_DESKTOP_SESSION_ID', 'KDE_FULL_SESSION',
+  'CI', 'DOCKER_HOST', 'CONTAINER'
+]
+
 async function initAppServer () {
   const {
     config
@@ -205,7 +228,16 @@ function initIpc () {
     unregisterDeepLink,
     checkProtocolRegistration,
     getPendingDeepLink,
-    getEnv: (key) => key ? process.env[key] : { ...process.env }
+    getEnv: (key) => {
+      if (key) {
+        return SAFE_ENV_KEYS.includes(key) ? process.env[key] : ''
+      }
+      return Object.fromEntries(
+        SAFE_ENV_KEYS
+          .filter(k => process.env[k] !== undefined)
+          .map(k => [k, process.env[k]])
+      )
+    }
   }
   ipcMain.handle('async', (event, { name, args }) => {
     return asyncGlobals[name](...args)

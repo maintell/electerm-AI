@@ -93,7 +93,7 @@ class ElectermMCPServer {
   }
 
   // Send request to renderer process via IPC
-  sendToRenderer (action, data) {
+  sendToRenderer (action, data, timeoutMs = 30000) {
     return new Promise((resolve, reject) => {
       const requestId = uid()
       const win = globalState.get('win')
@@ -107,7 +107,7 @@ class ElectermMCPServer {
       const timeout = setTimeout(() => {
         this.pendingRequests.delete(requestId)
         reject(new Error('Request timeout'))
-      }, 30000)
+      }, timeoutMs)
 
       this.pendingRequests.set(requestId, { resolve, reject, timeout })
 
@@ -267,6 +267,33 @@ class ElectermMCPServer {
         const tabId = args?.tabId
         const lines = args?.lines
         const result = await self.sendToRenderer('tool-call', { toolName: 'get_terminal_output', args: { tabId, lines } })
+        return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] }
+      }
+    )
+
+    server.registerTool(
+      'wait_for_electerm_terminal_idle',
+      {
+        description: 'Wait until the active terminal stops producing output, then return its content. ' +
+          'Use this after send_electerm_terminal_command to know when the command has finished. ' +
+          'The terminal is considered idle when no data has arrived for ~4 seconds. ' +
+          'Returns output and elapsed time; timedOut=true if the command was still running at the timeout.',
+        inputSchema: {
+          tabId: z.string().optional().describe('Tab ID to watch (default: active tab)'),
+          timeout: z.number().optional().describe('Max milliseconds to wait for idle (default: 30000, max: 120000)'),
+          lines: z.number().optional().describe('Lines of terminal output to return when idle (default: 50)'),
+          minWait: z.number().optional().describe('Initial delay before polling starts, ms (default: 1000)')
+        }
+      },
+      async (args) => {
+        // IPC timeout must exceed the tool timeout by a safe margin
+        const toolTimeout = Math.min(args?.timeout || 30000, 120000)
+        const ipcTimeout = toolTimeout + 10000
+        const result = await self.sendToRenderer(
+          'tool-call',
+          { toolName: 'wait_for_terminal_idle', args },
+          ipcTimeout
+        )
         return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] }
       }
     )

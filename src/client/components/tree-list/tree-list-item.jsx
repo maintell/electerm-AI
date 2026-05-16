@@ -3,16 +3,10 @@
  */
 
 import { memo } from 'react'
-import createName, { createTitleTag } from '../../common/create-title'
+import { createTitleTag } from '../../common/create-title'
 import classnames from 'classnames'
 import highlight from '../common/highlight'
 import uid from '../../common/uid'
-
-function getItemLabel (item, isGroup) {
-  return isGroup
-    ? item?.title || ''
-    : createName(item)
-}
 
 function areEqual (prevProps, nextProps) {
   const prevSelected = prevProps.selectedItemId === prevProps.item.id
@@ -27,10 +21,10 @@ function areEqual (prevProps, nextProps) {
     prevSelected === nextSelected &&
     prevSearchSelected === nextSearchSelected &&
     prevProps.item.id === nextProps.item.id &&
-    prevProps.item.level === nextProps.item.level &&
-    prevProps.item.color === nextProps.item.color &&
-    prevProps.item.description === nextProps.item.description &&
-    getItemLabel(prevProps.item, prevProps.isGroup) === getItemLabel(nextProps.item, nextProps.isGroup)
+    prevProps.itemLevel === nextProps.itemLevel &&
+    prevProps.itemColor === nextProps.itemColor &&
+    prevProps.itemDescription === nextProps.itemDescription &&
+    prevProps.itemLabel === nextProps.itemLabel
 }
 
 function TreeListItem (props) {
@@ -87,7 +81,7 @@ function TreeListItem (props) {
     : null
   const title = isGroup
     ? item.title
-    : createName(item)
+    : props.itemLabel
   const titleAll = title + (item.description ? ' - ' + item.description : '')
   const titleHighlight = isGroup
     ? item.title || 'no title'

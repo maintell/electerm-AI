@@ -26,7 +26,9 @@ export function buildVisibleTreeRows ({
     const item = bookmarksMap.get(bookmarkId)
     const matched = Boolean(
       item &&
-      (!lowerKeyword || createName(item).toLowerCase().includes(lowerKeyword))
+      (!lowerKeyword ||
+        createName(item).toLowerCase().includes(lowerKeyword) ||
+        (item.description || '').toLowerCase().includes(lowerKeyword))
     )
     bookmarkMatchCache.set(bookmarkId, matched)
     return matched

@@ -36,6 +36,7 @@ import WorkspaceSaveModal from '../tabs/workspace-save-modal'
 import BookmarkFromHistoryModal from '../bookmark-form/bookmark-from-history-modal'
 import AutoSync from '../setting-sync/auto-sync'
 import BatchOpRunner from '../batch-op/batch-op-runner'
+import UnixTimestampTooltip from '../terminal/unix-timestamp-tooltip'
 import { pick } from 'lodash-es'
 import deepCopy from 'json-deep-copy'
 import './wrapper.styl'
@@ -51,7 +52,7 @@ export default auto(function Index (props) {
     ipcOnEvent('open-about', store.openAbout)
     ipcOnEvent('new-ssh', store.onNewSsh)
     ipcOnEvent('add-tab-from-command-line', store.addTabFromCommandLine)
-    ipcOnEvent('open-tab', (e, parsed) => store.addTab(parsed))
+    ipcOnEvent('open-tab', (e, parsed) => store.ipcOpenTab(parsed))
     ipcOnEvent('openSettings', store.openSetting)
     ipcOnEvent('selectall', store.selectall)
     ipcOnEvent('focused', store.focus)
@@ -297,6 +298,7 @@ export default auto(function Index (props) {
         <NotificationContainer />
         <BatchOpRunner />
         <AIConfigModal store={store} />
+        <UnixTimestampTooltip />
       </div>
     </ConfigProvider>
   )
